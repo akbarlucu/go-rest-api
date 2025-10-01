@@ -84,8 +84,8 @@ func Update(w http.ResponseWriter, r *http.Request) {
 
 	defer r.Body.Close()
 
-	if err := models.DB.Where("id= ?", id).Updates(&product).Error; err != nil {
-		ResponseError(w, http.StatusInternalServerError, err.Error())
+	if models.DB.Where("id= ?", id).Updates(&product).RowsAffected == 0 {
+		ResponseError(w, http.StatusBadRequest, "Tidak dapat mengupdate product")
 		return
 	}
 
@@ -95,5 +95,23 @@ func Update(w http.ResponseWriter, r *http.Request) {
 }
 
 func Delete(w http.ResponseWriter, r *http.Request) {
+
+	input := map[string]string{"id": ""}
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&input); err != nil {
+		ResponseError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	defer r.Body.Close()
+
+	var product models.Product
+	if models.DB.Delete(&product, input["id"]).RowsAffected == 0 {
+		ResponseError(w, http.StatusBadRequest, "Tidak dapat menghapus product")
+		return
+	}
+
+	response := map[string]string{"message": "Product berhasil dihapus"}
+	ResponseJson(w, http.StatusOK, response)
 
 }
